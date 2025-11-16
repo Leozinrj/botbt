@@ -310,65 +310,88 @@ def check_enemies_on_screen(enemy_images):
 # SISTEMA DE LOOT
 # ===========================
 
-def check_and_collect_loot_fast(ser, loot_images):
+def check_and_collect_loot_PROTECTED(ser, loot_images):
     """
-    Verifica REFORÇADAMENTE se há loot na tela e coleta com CLIQUE DIREITO
-    Sistema de 3 VARREDURAS para garantir que não perde nenhum loot
+    Versão PROTEGIDA da coleta de loot - NÃO PODE SER INTERROMPIDA
+    Sistema de 3 VARREDURAS com tempo total dedicado apenas ao loot
+    Durante este processo, ignora COMPLETAMENTE a detecção de inimigos
     Retorna True se coletou loot
     """
-    print(f"[LOOT] ⏳ Aguardando loot aparecer (1.0s)...")
-    time.sleep(1.0)  # AGUARDA loot dropar na tela (aumentado de 0.8s)
+    print(f"[LOOT] 🛡️ MODO PROTEÇÃO ATIVADO - Ignorando inimigos durante coleta")
+    print(f"[LOOT] ⏳ Aguardando loot aparecer (1.2s)...")
+    time.sleep(1.2)  # TEMPO EXTRA para garantir que loot apareceu
     
-    print(f"[LOOT] 🔍 [1/3] Primeira varredura...")
+    total_collected = 0
     
-    # VARREDURA 1 - Confiança normal
+    # VARREDURA 1 - Confiança normal (0.65)
+    print(f"[LOOT] 🔍 [1/3] Primeira varredura (confidence 0.65)...")
     loots_found = []
     for loot_name, loot_image in loot_images.items():
-        pos = find_image_quick(loot_image, confidence=0.65)  # Reduzido de 0.7 para 0.65
+        pos = find_image_quick(loot_image, confidence=0.65)
         if pos:
             loots_found.append((loot_name, pos))
     
-    # VARREDURA 2 - Se não achou, tenta novamente
-    if not loots_found:
-        print("[LOOT] 🔄 [2/3] Segunda varredura em 0.4s...")
-        time.sleep(0.4)
-        
-        for loot_name, loot_image in loot_images.items():
-            pos = find_image_quick(loot_image, confidence=0.65)
-            if pos:
-                loots_found.append((loot_name, pos))
+    # Coleta encontrados na varredura 1
+    if loots_found:
+        print(f"[LOOT] 💎 Varredura 1: {len(loots_found)} loot(s) encontrado(s)!")
+        for loot_name, pos in loots_found:
+            print(f"[LOOT] 🎯 Coletando {loot_name.upper()} em {pos}...")
+            if click_at_position(ser, pos[0], pos[1], right_click=True):
+                print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
+                total_collected += 1
+                time.sleep(0.25)  # Tempo entre coletas
     
-    # VARREDURA 3 - Última tentativa com confiança BAIXA
-    if not loots_found:
-        print("[LOOT] 🔄 [3/3] Terceira varredura (confiança baixa) em 0.4s...")
-        time.sleep(0.4)
-        
-        for loot_name, loot_image in loot_images.items():
-            pos = find_image_quick(loot_image, confidence=0.60)  # Confiança REDUZIDA
-            if pos:
-                loots_found.append((loot_name, pos))
+    # VARREDURA 2 - Segunda chance (0.65)
+    print(f"[LOOT] 🔄 [2/3] Segunda varredura em 0.6s...")
+    time.sleep(0.6)
     
-    if not loots_found:
-        print("[LOOT] ✗ Nenhum loot detectado após 3 varreduras REFORÇADAS")
-        return False
+    loots_found = []
+    for loot_name, loot_image in loot_images.items():
+        pos = find_image_quick(loot_image, confidence=0.65)
+        if pos:
+            loots_found.append((loot_name, pos))
     
-    # Se encontrou loot, coleta TODOS rapidamente
-    print(f"[LOOT] 💎 {len(loots_found)} loot(s) detectado(s)!")
-    collected = 0
+    # Coleta encontrados na varredura 2
+    if loots_found:
+        print(f"[LOOT] 💎 Varredura 2: {len(loots_found)} loot(s) encontrado(s)!")
+        for loot_name, pos in loots_found:
+            print(f"[LOOT] 🎯 Coletando {loot_name.upper()} em {pos}...")
+            if click_at_position(ser, pos[0], pos[1], right_click=True):
+                print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
+                total_collected += 1
+                time.sleep(0.25)
     
-    for loot_name, pos in loots_found:
-        print(f"[LOOT] Coletando {loot_name.upper()} em {pos}...")
-        if click_at_position(ser, pos[0], pos[1], right_click=True):
-            print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
-            collected += 1
-            time.sleep(0.2)  # Aumentado de 0.15 para 0.2s
+    # VARREDURA 3 - Última tentativa com confiança BAIXA (0.58)
+    print(f"[LOOT] 🔄 [3/3] Varredura final (confidence BAIXA 0.58) em 0.6s...")
+    time.sleep(0.6)
     
-    if collected > 0:
-        print(f"[LOOT] 💎 Total coletado: {collected} item(s)")
-        time.sleep(0.3)  # Aumentado de 0.2 para 0.3s
+    loots_found = []
+    for loot_name, loot_image in loot_images.items():
+        pos = find_image_quick(loot_image, confidence=0.58)  # MUITO baixa para pegar qualquer coisa
+        if pos:
+            loots_found.append((loot_name, pos))
+    
+    # Coleta encontrados na varredura 3
+    if loots_found:
+        print(f"[LOOT] 💎 Varredura 3: {len(loots_found)} loot(s) encontrado(s)!")
+        for loot_name, pos in loots_found:
+            print(f"[LOOT] 🎯 Coletando {loot_name.upper()} em {pos}...")
+            if click_at_position(ser, pos[0], pos[1], right_click=True):
+                print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
+                total_collected += 1
+                time.sleep(0.25)
+    
+    # Resultado final
+    if total_collected > 0:
+        print(f"[LOOT] 🎉 TOTAL COLETADO: {total_collected} item(s)")
+        print(f"[LOOT] ⏰ Pausa final de 0.5s antes de continuar...")
+        time.sleep(0.5)
+        print(f"[LOOT] 🛡️ PROTEÇÃO DESATIVADA - Voltando ao combate normal")
         return True
-    
-    return False
+    else:
+        print(f"[LOOT] ❌ Nenhum loot coletado após 3 varreduras PROTEGIDAS")
+        print(f"[LOOT] 🛡️ PROTEÇÃO DESATIVADA - Voltando ao combate normal")
+        return False
 
 # ===========================
 # SISTEMA DE COMBATE
@@ -433,8 +456,8 @@ def combat_loop(ser, enemy_images, loot_images):
                 press_bracket(ser)
                 time.sleep(0.15)  # Pausa mínima
                 
-                # Análise RÁPIDA de loot e coleta imediata
-                loot_collected = check_and_collect_loot_fast(ser, loot_images)
+                # COLETA PROTEGIDA de loot - NÃO PODE SER INTERROMPIDA
+                loot_collected = check_and_collect_loot_PROTECTED(ser, loot_images)
                 
                 if not loot_collected:
                     # Se não teve loot, continua imediatamente
