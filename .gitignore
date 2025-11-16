@@ -26,3 +26,14 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Arduino build files
+*.elf
+*.hex
+*.o
+*.a
