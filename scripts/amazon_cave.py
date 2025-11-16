@@ -356,42 +356,70 @@ def check_enemies_on_screen(enemy_images):
 # SISTEMA DE LOOT
 # ===========================
 
-def check_and_collect_loot_LIGHTNING(ser, loot_images):
+def check_and_collect_loot_SMART(ser, loot_images):
     """
-    Versão LIGHTNING da coleta de loot - ULTRA RÁPIDA
-    Sistema otimizado: 1 varredura rápida + coleta imediata
-    Retorna True se coletou loot
+    Versão INTELIGENTE da coleta de loot - Evita cliques duplicados
+    Detecta círculos únicos e clica apenas UMA VEZ em cada corpo
+    Usa distância mínima para evitar duplicatas
     """
-    print(f"[LOOT] ⚡ LIGHTNING MODE - Coleta ultra rápida")
+    print(f"[LOOT] 🧠 SMART MODE - Coleta inteligente (sem duplicatas)")
     print(f"[LOOT] ⏳ Aguardando loot aparecer (0.8s)...")
-    time.sleep(0.8)  # Tempo reduzido de 1.2s para 0.8s
+    time.sleep(0.8)
     
-    # VARREDURA ÚNICA - Ultra rápida
-    print(f"[LOOT] 🔍 Varredura lightning (confidence 0.60)...")
-    loots_found = []
+    # Lista para armazenar posições únicas já detectadas
+    unique_positions = []
+    MIN_DISTANCE = 50  # Distância mínima entre loots (pixels)
     
-    # Verifica todos os loots de uma só vez
+    print(f"[LOOT] 🔍 Detectando círculos únicos...")
+    
+    # Verifica todas as imagens de loot (3 variações do círculo)
     for loot_name, loot_image in loot_images.items():
-        pos = find_image_ULTRA_FAST(loot_image, confidence=0.60)  # Confidence baixa para velocidade
-        if pos:
-            loots_found.append((loot_name, pos))
+        # Busca todas as ocorrências desta imagem
+        try:
+            # Encontra TODAS as ocorrências na tela
+            locations = list(pg.locateAllOnScreen(loot_image, confidence=0.60))
+            
+            for box in locations:
+                center_x = int(box.left + box.width / 2)
+                center_y = int(box.top + box.height / 2)
+                new_pos = (center_x, center_y)
+                
+                # Verifica se esta posição é única (não muito próxima de outras)
+                is_unique = True
+                for existing_pos in unique_positions:
+                    distance = ((new_pos[0] - existing_pos[0])**2 + (new_pos[1] - existing_pos[1])**2)**0.5
+                    if distance < MIN_DISTANCE:
+                        is_unique = False
+                        break
+                
+                # Se é única, adiciona à lista
+                if is_unique:
+                    unique_positions.append(new_pos)
+                    print(f"[LOOT] 📍 Círculo único detectado: {loot_name.upper()} em {new_pos}")
+                    
+        except Exception as e:
+            # Se falhar, usa método original como fallback
+            pos = find_image_ULTRA_FAST(loot_image, confidence=0.60)
+            if pos and pos not in unique_positions:
+                unique_positions.append(pos)
+                print(f"[LOOT] 📍 Fallback: {loot_name.upper()} em {pos}")
     
-    # Se encontrou algo, coleta TUDO imediatamente
-    if loots_found:
-        print(f"[LOOT] ⚡ {len(loots_found)} loot(s) encontrado(s) - Coletando imediatamente!")
+    # Agora coleta cada posição única apenas UMA VEZ
+    if unique_positions:
+        print(f"[LOOT] 🎯 {len(unique_positions)} corpo(s) único(s) com círculo detectado(s)")
         total_collected = 0
         
-        for loot_name, pos in loots_found:
-            print(f"[LOOT] 🎯 {loot_name.upper()} em {pos}...")
+        for i, pos in enumerate(unique_positions, 1):
+            print(f"[LOOT] 🎯 Corpo #{i} em {pos}...")
             if click_at_position(ser, pos[0], pos[1], right_click=True):
-                print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
+                print(f"[LOOT] ✅ Corpo #{i} coletado!")
                 total_collected += 1
-                time.sleep(0.1)  # Delay MÍNIMO entre coletas
+                time.sleep(0.15)  # Pausa entre coletas
         
-        print(f"[LOOT] ⚡ LIGHTNING: {total_collected} item(s) coletado(s) em <2s!")
+        print(f"[LOOT] 🧠 SMART: {total_collected} corpo(s) coletado(s) - Zero duplicatas!")
         return True
     else:
-        print(f"[LOOT] ⚡ LIGHTNING: Sem loot - Continuando imediatamente")
+        print(f"[LOOT] 🧠 SMART: Nenhum círculo detectado")
         return False
 
 def check_and_collect_loot_PROTECTED(ser, loot_images):
@@ -539,8 +567,8 @@ def combat_loop_ULTRA_FAST(ser, enemy_images, loot_images):
                 press_bracket(ser)
                 time.sleep(0.1)  # Pausa mínima
                 
-                # COLETA LIGHTNING de loot - ULTRA RÁPIDA
-                loot_collected = check_and_collect_loot_LIGHTNING(ser, loot_images)
+                # COLETA INTELIGENTE de loot - Sem duplicatas
+                loot_collected = check_and_collect_loot_SMART(ser, loot_images)
                 
                 if not loot_collected:
                     # Se não teve loot, continua imediatamente
@@ -619,8 +647,8 @@ def combat_loop(ser, enemy_images, loot_images):
                 press_bracket(ser)
                 time.sleep(0.1)  # Pausa mínima
                 
-                # COLETA LIGHTNING de loot - ULTRA RÁPIDA
-                loot_collected = check_and_collect_loot_LIGHTNING(ser, loot_images)
+                # COLETA INTELIGENTE de loot - Sem duplicatas
+                loot_collected = check_and_collect_loot_SMART(ser, loot_images)
                 
                 if not loot_collected:
                     # Se não teve loot, continua imediatamente
