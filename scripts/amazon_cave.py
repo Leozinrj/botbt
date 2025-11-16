@@ -145,11 +145,8 @@ def press_key_2(ser):
     return send_command(ser, "KT 2")
 
 def press_bracket(ser):
-    """Pressiona tecla 9 duas vezes após matar inimigo"""
-    print("[TECLADO] Pressionando 9 (1ª vez)")
-    send_command(ser, "KT 9")
-    time.sleep(0.2)
-    print("[TECLADO] Pressionando 9 (2ª vez)")
+    """Pressiona tecla 9 UMA VEZ após matar inimigo (otimizado)"""
+    print("[TECLADO] Pressionando 9 (1x apenas)")
     send_command(ser, "KT 9")
     return True
 
@@ -359,6 +356,44 @@ def check_enemies_on_screen(enemy_images):
 # SISTEMA DE LOOT
 # ===========================
 
+def check_and_collect_loot_LIGHTNING(ser, loot_images):
+    """
+    Versão LIGHTNING da coleta de loot - ULTRA RÁPIDA
+    Sistema otimizado: 1 varredura rápida + coleta imediata
+    Retorna True se coletou loot
+    """
+    print(f"[LOOT] ⚡ LIGHTNING MODE - Coleta ultra rápida")
+    print(f"[LOOT] ⏳ Aguardando loot aparecer (0.8s)...")
+    time.sleep(0.8)  # Tempo reduzido de 1.2s para 0.8s
+    
+    # VARREDURA ÚNICA - Ultra rápida
+    print(f"[LOOT] 🔍 Varredura lightning (confidence 0.60)...")
+    loots_found = []
+    
+    # Verifica todos os loots de uma só vez
+    for loot_name, loot_image in loot_images.items():
+        pos = find_image_ULTRA_FAST(loot_image, confidence=0.60)  # Confidence baixa para velocidade
+        if pos:
+            loots_found.append((loot_name, pos))
+    
+    # Se encontrou algo, coleta TUDO imediatamente
+    if loots_found:
+        print(f"[LOOT] ⚡ {len(loots_found)} loot(s) encontrado(s) - Coletando imediatamente!")
+        total_collected = 0
+        
+        for loot_name, pos in loots_found:
+            print(f"[LOOT] 🎯 {loot_name.upper()} em {pos}...")
+            if click_at_position(ser, pos[0], pos[1], right_click=True):
+                print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
+                total_collected += 1
+                time.sleep(0.1)  # Delay MÍNIMO entre coletas
+        
+        print(f"[LOOT] ⚡ LIGHTNING: {total_collected} item(s) coletado(s) em <2s!")
+        return True
+    else:
+        print(f"[LOOT] ⚡ LIGHTNING: Sem loot - Continuando imediatamente")
+        return False
+
 def check_and_collect_loot_PROTECTED(ser, loot_images):
     """
     Versão PROTEGIDA da coleta de loot - NÃO PODE SER INTERROMPIDA
@@ -499,13 +534,13 @@ def combat_loop_ULTRA_FAST(ser, enemy_images, loot_images):
                     print(f"[COMBAT] Aguardando {COMBAT_DELAY}s de combate...")
                     time.sleep(COMBAT_DELAY)
                 
-                # Pressiona 9 DUAS VEZES após matar (GARANTIDO)
-                print(f"[COMBAT] Pressionando tecla 9 (2x) após matar {enemy_name}")
+                # Pressiona 9 UMA VEZ após matar (otimizado)
+                print(f"[COMBAT] Pressionando tecla 9 (1x) após matar {enemy_name}")
                 press_bracket(ser)
-                time.sleep(0.15)  # Pausa mínima
+                time.sleep(0.1)  # Pausa mínima
                 
-                # COLETA PROTEGIDA de loot - NÃO PODE SER INTERROMPIDA
-                loot_collected = check_and_collect_loot_PROTECTED(ser, loot_images)
+                # COLETA LIGHTNING de loot - ULTRA RÁPIDA
+                loot_collected = check_and_collect_loot_LIGHTNING(ser, loot_images)
                 
                 if not loot_collected:
                     # Se não teve loot, continua imediatamente
@@ -579,18 +614,18 @@ def combat_loop(ser, enemy_images, loot_images):
                     print(f"[COMBAT] Aguardando {COMBAT_DELAY}s de combate...")
                     time.sleep(COMBAT_DELAY)
                 
-                # Pressiona 9 DUAS VEZES após matar (GARANTIDO)
-                print(f"[COMBAT] Pressionando tecla 9 (2x) após matar {enemy_name}")
+                # Pressiona 9 UMA VEZ após matar (otimizado)
+                print(f"[COMBAT] Pressionando tecla 9 (1x) após matar {enemy_name}")
                 press_bracket(ser)
-                time.sleep(0.15)  # Pausa mínima
+                time.sleep(0.1)  # Pausa mínima
                 
-                # COLETA PROTEGIDA de loot - NÃO PODE SER INTERROMPIDA
-                loot_collected = check_and_collect_loot_PROTECTED(ser, loot_images)
+                # COLETA LIGHTNING de loot - ULTRA RÁPIDA
+                loot_collected = check_and_collect_loot_LIGHTNING(ser, loot_images)
                 
                 if not loot_collected:
                     # Se não teve loot, continua imediatamente
                     print(f"[COMBAT] Sem loot - Procurando próximo inimigo...")
-                    time.sleep(0.1)
+                    time.sleep(0.05)  # Delay MÍNIMO
                 
                 # Continua para próximo inimigo
                 continue
@@ -655,6 +690,7 @@ def navigate_to_flag(ser, flag_name, flag_image, delay_after, enemy_images, loot
         
         if use_right_click:
             print(f"[NAV] ⚠️ FLAG ESPECIAL: {flag_name} detectada - Usando CLIQUE DIREITO!")
+            print(f"[NAV] 🔄 CONFIRMAÇÃO: subida1.png = CLIQUE DIREITO GARANTIDO!")
         
         # Clica na flag
         if click_at_position(ser, pos[0], pos[1], right_click=use_right_click):
