@@ -272,6 +272,24 @@ def locate_image(image_path, timeout=LOCATE_TIMEOUT, confidence=CONFIDENCE):
         time.sleep(0.1)
     return None
 
+def find_image_ULTRA_FAST(image_path, confidence=0.75):
+    """Busca ULTRA RÁPIDA de imagem otimizada para inimigos"""
+    try:
+        # Usa região menor e mais rápida para inimigos (área central da tela)
+        region = (300, 200, 700, 400)  # Área central onde inimigos geralmente aparecem
+        pos = pg.locateCenterOnScreen(image_path, confidence=confidence, region=region)
+        if pos:
+            return (int(pos.x), int(pos.y))
+    except:
+        # Se falhou na região, tenta tela inteira com confidence ainda menor
+        try:
+            pos = pg.locateCenterOnScreen(image_path, confidence=confidence-0.05)
+            if pos:
+                return (int(pos.x), int(pos.y))
+        except:
+            pass
+    return None
+
 def find_image_quick(image_path, confidence=0.8):
     """Busca rápida de imagem sem timeout longo"""
     try:
@@ -286,6 +304,37 @@ def find_image_quick(image_path, confidence=0.8):
 # SISTEMA DE PRIORIDADE DE INIMIGOS
 # ===========================
 
+def check_enemies_ULTRA_FAST(enemy_images):
+    """
+    Verifica inimigos com VELOCIDADE MÁXIMA - otimizado para combate
+    Usa busca em região limitada e confidence reduzida para velocidade
+    Retorna: (enemy_name, position, priority) ou None
+    """
+    enemies_found = []
+    
+    # PRIORIDADE: Verifica WITCH primeiro (maior prioridade)
+    if 'witch' in enemy_images:
+        pos = find_image_ULTRA_FAST(enemy_images['witch'], confidence=0.72)
+        if pos:
+            priority = ENEMY_PRIORITY.get('witch', 0)
+            return ('witch', pos, priority)  # Retorna imediatamente se encontrar witch
+    
+    # Depois verifica outros inimigos em paralelo
+    for enemy_name, enemy_image in enemy_images.items():
+        if enemy_name == 'witch':  # Já verificamos witch acima
+            continue
+        pos = find_image_ULTRA_FAST(enemy_image, confidence=0.72)  # Confidence menor para velocidade
+        if pos:
+            priority = ENEMY_PRIORITY.get(enemy_name, 0)
+            enemies_found.append((enemy_name, pos, priority))
+    
+    if not enemies_found:
+        return None
+    
+    # Retorna o inimigo com maior prioridade
+    enemies_found.sort(key=lambda x: x[2], reverse=True)
+    return enemies_found[0]
+
 def check_enemies_on_screen(enemy_images):
     """
     Verifica todos os inimigos na tela e retorna o de maior prioridade
@@ -294,7 +343,7 @@ def check_enemies_on_screen(enemy_images):
     enemies_found = []
     
     for enemy_name, enemy_image in enemy_images.items():
-        pos = find_image_quick(enemy_image, confidence=0.8)
+        pos = find_image_quick(enemy_image, confidence=0.75)  # Reduzido de 0.8 para 0.75
         if pos:
             priority = ENEMY_PRIORITY.get(enemy_name, 0)
             enemies_found.append((enemy_name, pos, priority))
@@ -397,6 +446,85 @@ def check_and_collect_loot_PROTECTED(ser, loot_images):
 # SISTEMA DE COMBATE
 # ===========================
 
+def combat_loop_ULTRA_FAST(ser, enemy_images, loot_images):
+    """
+    Loop de combate ULTRA RÁPIDO com detecção otimizada
+    Usa check_enemies_ULTRA_FAST para máxima velocidade
+    Reduz delays entre verificações
+    """
+    combat_count = 0
+    consecutive_no_enemies = 0
+    
+    print("[COMBAT] 🚀 Iniciando combate ULTRA RÁPIDO...")
+    
+    while True:
+        # Busca inimigo com VELOCIDADE MÁXIMA
+        enemy_found = check_enemies_ULTRA_FAST(enemy_images)
+        
+        if enemy_found:
+            enemy_name, pos, priority = enemy_found
+            combat_count += 1
+            consecutive_no_enemies = 0
+            
+            print(f"[COMBAT] ⚡ {enemy_name.upper()} detectado INSTANTANEAMENTE (prioridade {priority}) em {pos}")
+            print(f"[COMBAT] 🎯 Atacando #{combat_count} com CLIQUE ESQUERDO...")
+            
+            # Clica no inimigo com BOTÃO ESQUERDO IMEDIATAMENTE
+            if click_at_position(ser, pos[0], pos[1], right_click=False):
+                print(f"[COMBAT] ✅ {enemy_name.upper()} atacado!")
+                
+                # COMBATE ESPECIAL CONTRA WITCH - Pressiona tecla 2 a cada 2.2s
+                if enemy_name.lower() == "witch":
+                    print(f"[COMBAT] ⚡ WITCH DETECTADA! Usando combate especial com tecla 2 a cada 2.2s")
+                    
+                    # Divide o tempo de combate em intervalos de 2.2s
+                    remaining_time = COMBAT_DELAY
+                    interval = 2.2
+                    
+                    while remaining_time > 0:
+                        # Pressiona tecla 2
+                        press_key_2(ser)
+                        
+                        # Aguarda 2.2s ou o tempo restante (o que for menor)
+                        sleep_time = min(interval, remaining_time)
+                        if sleep_time > 0:
+                            print(f"[COMBAT] Aguardando {sleep_time:.1f}s...")
+                            time.sleep(sleep_time)
+                        
+                        remaining_time -= interval
+                    
+                    print(f"[COMBAT] ⚡ Combate especial contra WITCH concluído!")
+                else:
+                    # Combate normal para outros inimigos
+                    print(f"[COMBAT] Aguardando {COMBAT_DELAY}s de combate...")
+                    time.sleep(COMBAT_DELAY)
+                
+                # Pressiona 9 DUAS VEZES após matar (GARANTIDO)
+                print(f"[COMBAT] Pressionando tecla 9 (2x) após matar {enemy_name}")
+                press_bracket(ser)
+                time.sleep(0.15)  # Pausa mínima
+                
+                # COLETA PROTEGIDA de loot - NÃO PODE SER INTERROMPIDA
+                loot_collected = check_and_collect_loot_PROTECTED(ser, loot_images)
+                
+                if not loot_collected:
+                    # Se não teve loot, continua imediatamente
+                    print(f"[COMBAT] Sem loot - Procurando próximo inimigo...")
+                    time.sleep(0.05)  # Delay MÍNIMO
+                
+                # Continua para próximo inimigo
+                continue
+                
+        else:
+            consecutive_no_enemies += 1
+            print(f"[COMBAT] Nenhum inimigo detectado ({consecutive_no_enemies}/3)")  # Aumentado para 3
+            
+            if consecutive_no_enemies >= 3:  # Mais tentativas antes de desistir
+                print(f"[COMBAT] Área limpa! Total de combates: {combat_count}")
+                return combat_count
+            
+            time.sleep(0.2)  # REDUZIDO de 1.0s para 0.2s - MUITO mais rápido
+
 def combat_loop(ser, enemy_images, loot_images):
     """
     Loop de combate inteligente com prioridades
@@ -475,7 +603,7 @@ def combat_loop(ser, enemy_images, loot_images):
                 print(f"[COMBAT] Área limpa! Total de combates: {combat_count}")
                 return combat_count
             
-            time.sleep(1.0)
+            time.sleep(0.5)  # REDUZIDO de 1.0s para 0.5s
 
 # ===========================
 # SISTEMA DE NAVEGAÇÃO COM INTERRUPÇÃO
@@ -501,8 +629,8 @@ def navigate_to_flag(ser, flag_name, flag_image, delay_after, enemy_images, loot
             print(f"[INTERRUPT] {enemy_name.upper()} detectado durante navegação para {flag_name}!")
             print(f"[INTERRUPT] Parando navegação para combater...")
             
-            # Entra em combate até limpar área
-            combat_loop(ser, enemy_images, loot_images)
+            # Entra em combate ULTRA RÁPIDO até limpar área
+            combat_loop_ULTRA_FAST(ser, enemy_images, loot_images)
             
             print(f"[INTERRUPT] *** RETOMANDO NAVEGAÇÃO PARA {flag_name} ***")
             continue  # Retoma do início
@@ -575,8 +703,8 @@ def monitored_delay(ser, seconds, context, enemy_images, loot_images):
             print(f"[INTERRUPT] {enemy_name.upper()} detectado durante delay de {context}!")
             print(f"[INTERRUPT] Pausando delay (restavam {remaining:.1f}s)...")
             
-            # Entra em combate
-            combat_loop(ser, enemy_images, loot_images)
+            # Entra em combate ULTRA RÁPIDO
+            combat_loop_ULTRA_FAST(ser, enemy_images, loot_images)
             
             print(f"[INTERRUPT] Retomando delay de {context}...")
             return True  # Indica que foi interrompido
