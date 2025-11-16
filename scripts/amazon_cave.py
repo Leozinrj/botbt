@@ -139,6 +139,11 @@ def move_to_screen_center(ser):
     pg.moveTo(center_x, center_y, duration=0.1)
     return True
 
+def press_key_2(ser):
+    """Pressiona tecla 2 para healing/ataque especial contra witch"""
+    print("[TECLADO] Pressionando tecla 2")
+    return send_command(ser, "KT 2")
+
 def press_bracket(ser):
     """Pressiona tecla 9 duas vezes após matar inimigo"""
     print("[TECLADO] Pressionando 9 (1ª vez)")
@@ -378,9 +383,31 @@ def combat_loop(ser, enemy_images, loot_images):
             if click_at_position(ser, pos[0], pos[1], right_click=False):
                 print(f"[COMBAT] {enemy_name.upper()} atacado!")
                 
-                # Aguarda tempo de combate
-                print(f"[COMBAT] Aguardando {COMBAT_DELAY}s de combate...")
-                time.sleep(COMBAT_DELAY)
+                # COMBATE ESPECIAL CONTRA WITCH - Pressiona tecla 2 a cada 2.2s
+                if enemy_name.lower() == "witch":
+                    print(f"[COMBAT] ⚡ WITCH DETECTADA! Usando combate especial com tecla 2 a cada 2.2s")
+                    
+                    # Divide o tempo de combate em intervalos de 2.2s
+                    remaining_time = COMBAT_DELAY
+                    interval = 2.2
+                    
+                    while remaining_time > 0:
+                        # Pressiona tecla 2
+                        press_key_2(ser)
+                        
+                        # Aguarda 2.2s ou o tempo restante (o que for menor)
+                        sleep_time = min(interval, remaining_time)
+                        if sleep_time > 0:
+                            print(f"[COMBAT] Aguardando {sleep_time:.1f}s...")
+                            time.sleep(sleep_time)
+                        
+                        remaining_time -= interval
+                    
+                    print(f"[COMBAT] ⚡ Combate especial contra WITCH concluído!")
+                else:
+                    # Combate normal para outros inimigos
+                    print(f"[COMBAT] Aguardando {COMBAT_DELAY}s de combate...")
+                    time.sleep(COMBAT_DELAY)
                 
                 # Pressiona 9 DUAS VEZES após matar
                 print(f"[COMBAT] Pressionando tecla 9 (2x) após matar {enemy_name}")
@@ -614,6 +641,7 @@ def main():
     print("- Clique ESQUERDO para inimigos e flags")
     print("- Clique DIREITO para loot")
     print("- Tecla 9 (2x) após matar inimigo")
+    print("- ⚡ WITCH: Tecla 2 a cada 2.2s durante combate (ESPECIAL)")
     print("- Delays entre flags: -45% (ultra otimizado)")
     print("- Mouse move para centro após clicar em flag")
     print("- Healing: DESATIVADO")
