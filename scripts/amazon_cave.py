@@ -308,24 +308,42 @@ def check_enemies_on_screen(enemy_images):
 def check_and_collect_loot(ser, loot_images):
     """
     Verifica se há loot na tela e coleta com CLIQUE DIREITO
+    Tenta até 2 vezes se necessário
     Retorna True se coletou loot
     """
     print(f"[LOOT] Verificando loot na tela ({LOOT_CHECK_TIME:.1f}s)...")
     start_time = time.time()
+    attempts = 0
+    max_attempts = 2
     
-    while time.time() - start_time < LOOT_CHECK_TIME:
+    while time.time() - start_time < LOOT_CHECK_TIME and attempts < max_attempts:
         for loot_name, loot_image in loot_images.items():
             pos = find_image_quick(loot_image, confidence=0.7)
             if pos:
-                print(f"[LOOT] {loot_name.upper()} encontrado em {pos}!")
+                attempts += 1
+                print(f"[LOOT] {loot_name.upper()} encontrado em {pos}! (tentativa {attempts}/{max_attempts})")
                 print(f"[LOOT] Coletando com CLIQUE DIREITO...")
                 if click_at_position(ser, pos[0], pos[1], right_click=True):
                     print(f"[LOOT] ✅ {loot_name.upper()} coletado!")
                     time.sleep(0.5)
-                    return True
+                    
+                    # Verifica se ainda há mais loot
+                    time.sleep(0.3)
+                    remaining_loot = False
+                    for check_loot_name, check_loot_image in loot_images.items():
+                        if find_image_quick(check_loot_image, confidence=0.7):
+                            print(f"[LOOT] Ainda há {check_loot_name.upper()} na tela!")
+                            remaining_loot = True
+                            break
+                    
+                    if remaining_loot:
+                        continue  # Continua coletando
+                    else:
+                        return True  # Todo loot coletado
+        
         time.sleep(0.1)
     
-    print("[LOOT] Nenhum loot encontrado")
+    print("[LOOT] Nenhum loot encontrado ou tempo esgotado")
     return False
 
 # ===========================
@@ -336,6 +354,7 @@ def combat_loop(ser, enemy_images, loot_images):
     """
     Loop de combate inteligente com prioridades
     Clica com BOTÃO ESQUERDO nos inimigos
+    SEMPRE coleta loot antes de procurar próximo inimigo
     Retorna quando não houver mais inimigos
     """
     combat_count = 0
@@ -368,8 +387,20 @@ def combat_loop(ser, enemy_images, loot_images):
                 press_bracket(ser)
                 time.sleep(0.3)
                 
-                # Verifica e coleta loot com CLIQUE DIREITO
-                check_and_collect_loot(ser, loot_images)
+                # SEMPRE verifica e coleta loot com CLIQUE DIREITO
+                # Aguarda até clicar no loot ou tempo esgotar
+                loot_collected = check_and_collect_loot(ser, loot_images)
+                
+                if loot_collected:
+                    print(f"[COMBAT] Loot coletado! Aguardando 0.5s antes de procurar próximo inimigo...")
+                    time.sleep(0.5)
+                else:
+                    print(f"[COMBAT] Nenhum loot encontrado. Continuando para próximo inimigo...")
+                    time.sleep(0.3)
+                
+                # Agora sim, procura próximo inimigo
+                continue
+                
         else:
             consecutive_no_enemies += 1
             print(f"[COMBAT] Nenhum inimigo detectado ({consecutive_no_enemies}/2)")
