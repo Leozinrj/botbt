@@ -312,34 +312,44 @@ def check_enemies_on_screen(enemy_images):
 
 def check_and_collect_loot_fast(ser, loot_images):
     """
-    Verifica RAPIDAMENTE se há loot na tela e coleta com CLIQUE DIREITO
-    Versão otimizada: aguarda 0.8s para loot aparecer, depois escaneia tudo de uma vez
+    Verifica REFORÇADAMENTE se há loot na tela e coleta com CLIQUE DIREITO
+    Sistema de 3 VARREDURAS para garantir que não perde nenhum loot
     Retorna True se coletou loot
     """
-    print(f"[LOOT] ⏳ Aguardando loot aparecer (0.8s)...")
-    time.sleep(0.8)  # AGUARDA loot dropar na tela
+    print(f"[LOOT] ⏳ Aguardando loot aparecer (1.0s)...")
+    time.sleep(1.0)  # AGUARDA loot dropar na tela (aumentado de 0.8s)
     
-    print(f"[LOOT] 🔍 Escaneando loot...")
+    print(f"[LOOT] 🔍 [1/3] Primeira varredura...")
     
-    # Primeira varredura completa - varredura 1
+    # VARREDURA 1 - Confiança normal
     loots_found = []
     for loot_name, loot_image in loot_images.items():
-        pos = find_image_quick(loot_image, confidence=0.7)
+        pos = find_image_quick(loot_image, confidence=0.65)  # Reduzido de 0.7 para 0.65
         if pos:
             loots_found.append((loot_name, pos))
     
-    # Se não achou nada na primeira, tenta SEGUNDA VARREDURA
+    # VARREDURA 2 - Se não achou, tenta novamente
     if not loots_found:
-        print("[LOOT] 🔄 Nada na 1ª varredura - Tentando 2ª varredura em 0.5s...")
-        time.sleep(0.5)
+        print("[LOOT] 🔄 [2/3] Segunda varredura em 0.4s...")
+        time.sleep(0.4)
         
         for loot_name, loot_image in loot_images.items():
-            pos = find_image_quick(loot_image, confidence=0.7)
+            pos = find_image_quick(loot_image, confidence=0.65)
+            if pos:
+                loots_found.append((loot_name, pos))
+    
+    # VARREDURA 3 - Última tentativa com confiança BAIXA
+    if not loots_found:
+        print("[LOOT] 🔄 [3/3] Terceira varredura (confiança baixa) em 0.4s...")
+        time.sleep(0.4)
+        
+        for loot_name, loot_image in loot_images.items():
+            pos = find_image_quick(loot_image, confidence=0.60)  # Confiança REDUZIDA
             if pos:
                 loots_found.append((loot_name, pos))
     
     if not loots_found:
-        print("[LOOT] ✗ Nenhum loot detectado após 2 varreduras")
+        print("[LOOT] ✗ Nenhum loot detectado após 3 varreduras REFORÇADAS")
         return False
     
     # Se encontrou loot, coleta TODOS rapidamente
@@ -491,6 +501,9 @@ def navigate_to_flag(ser, flag_name, flag_image, delay_after, enemy_images, loot
         # SUBIDA1 usa clique DIREITO, outras flags usam ESQUERDO
         use_right_click = (flag_name.lower() == "subida1")
         click_type = "DIREITO" if use_right_click else "ESQUERDO"
+        
+        if use_right_click:
+            print(f"[NAV] ⚠️ FLAG ESPECIAL: {flag_name} detectada - Usando CLIQUE DIREITO!")
         
         # Clica na flag
         if click_at_position(ser, pos[0], pos[1], right_click=use_right_click):
