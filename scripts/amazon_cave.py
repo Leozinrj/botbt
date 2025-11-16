@@ -72,8 +72,8 @@ ENEMY_PRIORITY = {
     "amazon": 1,     # Prioridade comum
 }
 
-COMBAT_DELAY = 8.0  # Tempo médio de combate
-LOOT_CHECK_TIME = 1.5  # Tempo para verificar loot após combate
+COMBAT_DELAY = 7.0  # Tempo médio de combate (reduzido de 8.0 para 7.0)
+LOOT_CHECK_TIME = 1.3  # Tempo para verificar loot após combate (reduzido de 1.5 para 1.3)
 
 # ===========================
 # FUNÇÕES DE COMUNICAÇÃO SERIAL
@@ -385,18 +385,18 @@ def combat_loop(ser, enemy_images, loot_images):
                 # Pressiona 9 DUAS VEZES após matar
                 print(f"[COMBAT] Pressionando tecla 9 (2x) após matar {enemy_name}")
                 press_bracket(ser)
-                time.sleep(0.3)
+                time.sleep(0.2)  # Reduzido de 0.3 para 0.2
                 
                 # SEMPRE verifica e coleta loot com CLIQUE DIREITO
                 # Aguarda até clicar no loot ou tempo esgotar
                 loot_collected = check_and_collect_loot(ser, loot_images)
                 
                 if loot_collected:
-                    print(f"[COMBAT] Loot coletado! Aguardando 0.5s antes de procurar próximo inimigo...")
-                    time.sleep(0.5)
+                    print(f"[COMBAT] Loot coletado! Aguardando 0.3s antes de procurar próximo inimigo...")
+                    time.sleep(0.3)  # Reduzido de 0.5 para 0.3
                 else:
                     print(f"[COMBAT] Nenhum loot encontrado. Continuando para próximo inimigo...")
-                    time.sleep(0.3)
+                    time.sleep(0.2)  # Reduzido de 0.3 para 0.2
                 
                 # Agora sim, procura próximo inimigo
                 continue
@@ -462,10 +462,10 @@ def navigate_to_flag(ser, flag_name, flag_image, delay_after, enemy_images, loot
             move_to_screen_center(ser)
             time.sleep(0.1)
             
-            # Delay após clicar na flag COM MONITORAMENTO (reduzido em 30%)
+            # Delay após clicar na flag COM MONITORAMENTO (reduzido em 45%)
             if delay_after > 0:
-                reduced_delay = delay_after * 0.7  # 30% de redução
-                print(f"[NAV] Aguardando {reduced_delay:.1f}s após {flag_name} (reduzido 30%, com monitoramento)...")
+                reduced_delay = delay_after * 0.55  # 45% de redução
+                print(f"[NAV] Aguardando {reduced_delay:.1f}s após {flag_name} (reduzido 45%, com monitoramento)...")
                 was_interrupted = monitored_delay(ser, reduced_delay, flag_name, enemy_images, loot_images)
                 
                 if was_interrupted:
@@ -486,7 +486,7 @@ def monitored_delay(ser, seconds, context, enemy_images, loot_images):
     """
     start_time = time.time()
     end_time = start_time + seconds
-    check_interval = 0.3
+    check_interval = 0.25  # Reduzido de 0.3 para 0.25
     
     enemies_found = 0
     
@@ -608,13 +608,13 @@ def main():
     print("- Parte Superior: 7 flags (am_a1 até am_a7)")
     print("- Subterrâneo: 18 flags (rota completa)")
     print("- Inimigos: witch (prioridade alta), valkyrie (média), amazon (comum)")
-    print(f"- Combate: {COMBAT_DELAY}s por inimigo")
+    print(f"- Combate: {COMBAT_DELAY}s por inimigo (otimizado)")
     print(f"- Loot: verificação de {LOOT_CHECK_TIME}s")
     print("- Sistema de prioridades: Inimigos > Loot > Navegação")
     print("- Clique ESQUERDO para inimigos e flags")
     print("- Clique DIREITO para loot")
     print("- Tecla 9 (2x) após matar inimigo")
-    print("- Delays entre flags: -30% (otimizado)")
+    print("- Delays entre flags: -45% (ultra otimizado)")
     print("- Mouse move para centro após clicar em flag")
     print("- Healing: DESATIVADO")
     
